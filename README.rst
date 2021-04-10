@@ -26,7 +26,27 @@ Badger Batcher contains useful utilities for batching a sequence on records
 Features
 --------
 
-* TODO
+Split records based max limit for batch size:
+
+.. code-block:: python
+
+    >>> records = [f"record: {rec}" for rec in range(5)]
+    >>> batcher = Batcher(records, max_batch_size=2)
+    >>> batcher.batches()
+    [['record: 0', 'record: 1'], ['record: 2', 'record: 3'], ['record: 4']]
+
+When processing big chunks of data, consider iterating instead:
+
+.. code-block:: python
+
+    >>> import sys
+    >>> records = (f"record: {rec}" for rec in range(sys.maxsize))
+    >>> batcher = Batcher(records, max_batch_size=2)
+    >>> for batch in batcher:
+    ...       first_batch = batch
+    ...       break
+    >>> first_batch
+    ['record: 0', 'record: 1']
 
 Credits
 -------

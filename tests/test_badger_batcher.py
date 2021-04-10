@@ -2,23 +2,14 @@
 
 """Tests for `badger_batcher` package."""
 
-import pytest
+import pytest  # noqa: F401
+from badger_batcher import Batcher
 
 
-from badger_batcher import badger_batcher
+def test_badger_max_batch_size_only():
+    records = (f"record: {rec}" for rec in range(21))
 
-
-@pytest.fixture
-def response():
-    """Sample pytest fixture.
-
-    See more at: http://doc.pytest.org/en/latest/fixture.html
-    """
-    # import requests
-    # return requests.get('https://github.com/audreyr/cookiecutter-pypackage')
-
-
-def test_content(response):
-    """Sample pytest test function with the pytest fixture as an argument."""
-    # from bs4 import BeautifulSoup
-    # assert 'GitHub' in BeautifulSoup(response.content).title.string
+    batcher = Batcher(records, max_batch_size=5)
+    batched_records = batcher.batches()
+    assert len(batched_records) == 5
+    assert batched_records[1][0] == "record: 5"
