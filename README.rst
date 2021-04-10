@@ -6,7 +6,7 @@ Badger Batcher
 .. image:: https://img.shields.io/pypi/v/badger_batcher.svg
         :target: https://pypi.python.org/pypi/badger_batcher
 
-.. image:: https://img.shields.io/travis/tkasu/badger_batcher.svg
+.. image:: https://travis-ci.com/tkasu/badger_batcher.svg?branch=master
         :target: https://travis-ci.com/tkasu/badger_batcher
 
 .. image:: https://readthedocs.org/projects/badger-batcher/badge/?version=latest
