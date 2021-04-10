@@ -2,6 +2,6 @@
 
 __author__ = """Tomi Kasurinen"""
 __email__ = "tomi.kasurinen@gmail.com"
-__version__ = "0.2.1"
+__version__ = "__version__ = '0.2.2'"
 
 from .core import Batcher  # noqa: F401
