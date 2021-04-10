@@ -81,10 +81,11 @@ Ready to contribute? Here's how to set up `badger_batcher` for local development
 
     $ black .
 
-6. When you're done making changes, check that your changes pass flake8 and the
+6. When you're done making changes, check that your changes pass flake8, types with mypy and the
    tests, including testing other Python versions with tox::
 
     $ flake8 badger_batcher tests
+    $ mypy badger_batcher
     $ pytest
     $ tox
 
