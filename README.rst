@@ -23,8 +23,23 @@ Badger Batcher contains useful utilities for batching a sequence on records
 * Documentation: https://badger-batcher.readthedocs.io.
 
 
+Installation
+------------
+
+.. code-block:: bash
+
+    $ pip install badger_batcher
+
+
 Features
 --------
+
+Import Batcher:
+
+.. code-block:: python
+
+    >>> from badger_batcher import Batcher
+
 
 Split records based max limit for batch size:
 
@@ -40,6 +55,7 @@ When processing big chunks of data, consider iterating instead:
 .. code-block:: python
 
     >>> import sys
+
     >>> records = (f"record: {rec}" for rec in range(sys.maxsize))
     >>> batcher = Batcher(records, max_batch_size=2)
     >>> for batch in batcher:

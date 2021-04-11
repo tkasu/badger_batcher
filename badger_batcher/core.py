@@ -54,6 +54,12 @@ class Batcher:
         self._iter_state = None
 
     def __iter__(self):
+        """
+        Makes Batcher iterable
+
+        Passes a generator to CacheIteration, as __next__ is starting iteration of
+        _iter_state multiple times, but we don't want it to start all over again.
+        """
         self._iter_state = CacheIterator(item for item in self.records)
         return self
 
