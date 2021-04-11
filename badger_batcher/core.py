@@ -53,6 +53,12 @@ class Batcher:
         self.max_batch_size = max_batch_size
         self._iter_state = None
 
+    def _check_max_batch_size(self, batch) -> bool:
+        if self.max_batch_size:
+            return len(batch) >= self.max_batch_size
+        else:
+            return False
+
     def __iter__(self):
         """
         Makes Batcher iterable
@@ -88,7 +94,7 @@ class Batcher:
 
         if self._iter_state:
             for record in self._iter_state:
-                if len(batch) >= self.max_batch_size:
+                if self._check_max_batch_size(batch):
                     return batch
                 else:
                     batch.append(record)
