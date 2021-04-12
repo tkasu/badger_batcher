@@ -8,23 +8,23 @@ class Batcher:
     """
     Utility that helps batching Iterables, main interface for badger_batcher.
 
-    Example usage with max batch size, getting the results as list of lists:
+    Example usage with max batch len, getting the results as list of lists:
 
     >>> records = (f"record: {rec}" for rec in range(21))
-    >>> batcher = Batcher(records, max_batch_size=5)
+    >>> batcher = Batcher(records, max_batch_len=5)
     >>> batched_records = batcher.batches()
     >>> len(batched_records)
     5
 
     >>> records = [f"record: {rec}" for rec in range(5)]
-    >>> batcher = Batcher(records, max_batch_size=2)
+    >>> batcher = Batcher(records, max_batch_len=2)
     >>> batcher.batches()
     [['record: 0', 'record: 1'], ['record: 2', 'record: 3'], ['record: 4']]
 
     >>> records = [b"aaaa", b"bb", b"ccccc", b"d"]
     >>> batcher = Batcher(
     ... records,
-    ... max_batch_size=2,
+    ... max_batch_len=2,
     ... max_record_size=4,
     ... size_calc_fn=len,
     ... when_record_size_exceeded="skip",
@@ -35,7 +35,7 @@ class Batcher:
     Iterating the results one batch at a time:
 
     >>> records = (f"record: {rec}" for rec in range(21))
-    >>> batcher = Batcher(records, max_batch_size=2)
+    >>> batcher = Batcher(records, max_batch_len=2)
     >>> for batch in batcher:
     ...       # do something
     ...       first_batch = batch
@@ -48,7 +48,7 @@ class Batcher:
 
     >>> import sys
     >>> records = (f"record: {rec}" for rec in range(sys.maxsize))
-    >>> batcher = Batcher(records, max_batch_size=2)
+    >>> batcher = Batcher(records, max_batch_len=2)
     >>> for batch in batcher:
     ...       first_batch = batch
     ...       break
@@ -57,7 +57,7 @@ class Batcher:
     """
 
     records: Iterable[Any]
-    max_batch_size: Optional[int]
+    max_batch_len: Optional[int]
     max_record_size = Optional[int]
     size_calc_fn = Optional[Callable[[Any], int]]
     when_record_size_exceeded = Optional[str]
@@ -66,14 +66,14 @@ class Batcher:
     def __init__(
         self,
         records,
-        max_batch_size=None,
+        max_batch_len=None,
         max_record_size=None,
         size_calc_fn=None,
         when_record_size_exceeded="raises",
     ):
         """
         :param records: Iterable of records to batch
-        :param max_batch_size: Optional max batch size
+        :param max_batch_len: Optional max batch size
         :param max_record_size: Optional max record size,
             if used size_calc_fn must be defined
         :param size_calc_fn: function from record type T -> int used to calculated size
@@ -81,7 +81,7 @@ class Batcher:
         :raises ValueError: in case of incompatible parameters
         """
         self.records = records
-        self.max_batch_size = max_batch_size
+        self.max_batch_len = max_batch_len
 
         if max_record_size and not size_calc_fn:
             raise ValueError("max_record_size requires size_calc_fn to be specified")
@@ -97,9 +97,9 @@ class Batcher:
 
         self._iter_state = None
 
-    def _check_max_batch_size(self, batch) -> bool:
-        if self.max_batch_size:
-            return len(batch) >= self.max_batch_size
+    def _check_max_batch_len(self, batch) -> bool:
+        if self.max_batch_len:
+            return len(batch) >= self.max_batch_len
         else:
             return False
 
@@ -163,7 +163,7 @@ class Batcher:
                             f"for when_record_size_exceeded"
                         )
 
-                if self._check_max_batch_size(batch):
+                if self._check_max_batch_len(batch):
                     return batch
                 else:
                     batch.append(record)

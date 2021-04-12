@@ -41,7 +41,7 @@ Import Batcher:
     >>> from badger_batcher import Batcher
 
 
-Split records based max limit for batch size:
+Split records based max limit for batch len:
 
 .. code-block:: python
 
@@ -50,7 +50,7 @@ Split records based max limit for batch size:
     >>> batcher.batches()
     [['record: 0', 'record: 1'], ['record: 2', 'record: 3'], ['record: 4']]
 
-Split records with max limit for batch size and max limit for record size:
+Split records with max limit for batch len and max limit for record size:
 
 .. code-block:: python
 
