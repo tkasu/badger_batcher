@@ -19,6 +19,14 @@ badger\_batcher.core module
     :undoc-members:
     :show-inheritance:
 
+badger\_batcher.errors module
+-----------------------------
+
+.. automodule:: badger_batcher.errors
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

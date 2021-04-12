@@ -21,6 +21,17 @@ class Batcher:
     >>> batcher.batches()
     [['record: 0', 'record: 1'], ['record: 2', 'record: 3'], ['record: 4']]
 
+    >>> records = [b"aaaa", b"bb", b"ccccc", b"d"]
+    >>> batcher = Batcher(
+    ... records,
+    ... max_batch_size=2,
+    ... max_record_size=4,
+    ... size_calc_fn=len,
+    ... when_record_size_exceeded="skip",
+    ... )
+    >>> batcher.batches()
+    [[b'aaaa', b'bb'], [b'd']]
+
     Iterating the results one batch at a time:
 
     >>> records = (f"record: {rec}" for rec in range(21))
@@ -60,6 +71,15 @@ class Batcher:
         size_calc_fn=None,
         when_record_size_exceeded="raises",
     ):
+        """
+        :param records: Iterable of records to batch
+        :param max_batch_size: Optional max batch size
+        :param max_record_size: Optional max record size,
+            if used size_calc_fn must be defined
+        :param size_calc_fn: function from record type T -> int used to calculated size
+        :param when_record_size_exceeded: What to do when when size limit is exceeded
+        :raises ValueError: in case of incompatible parameters
+        """
         self.records = records
         self.max_batch_size = max_batch_size
 
@@ -115,6 +135,10 @@ class Batcher:
 
         :return: List[Any] next batch
         :raises StopIteration: if self._iter_state is consumed.
+        :raises NotImplementedError: in case of non-valid value
+            for self.when_record_size_exceeded
+        :raises RecordSizeExceeded if self.when_record_size_exceeded is `raises`
+            and threshold is exceeded
         """
         if not self._iter_state:
             raise StopIteration

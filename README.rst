@@ -50,6 +50,21 @@ Split records based max limit for batch size:
     >>> batcher.batches()
     [['record: 0', 'record: 1'], ['record: 2', 'record: 3'], ['record: 4']]
 
+Split records with max limit for batch size and max limit for record size:
+
+.. code-block:: python
+
+    >>> records = [b"aaaa", b"bb", b"ccccc", b"d"]
+    >>> batcher = Batcher(
+    ... records,
+    ... max_batch_size=2,
+    ... max_record_size=4,
+    ... size_calc_fn=len,
+    ... when_record_size_exceeded="skip",
+    ... )
+    >>> batcher.batches()
+    [[b'aaaa', b'bb'], [b'd']]
+
 When processing big chunks of data, consider iterating instead:
 
 .. code-block:: python
@@ -59,10 +74,8 @@ When processing big chunks of data, consider iterating instead:
     >>> records = (f"record: {rec}" for rec in range(sys.maxsize))
     >>> batcher = Batcher(records, max_batch_size=2)
     >>> for batch in batcher:
-    ...       first_batch = batch
-    ...       break
-    >>> first_batch
-    ['record: 0', 'record: 1']
+    ...       # do something for each batch
+    ...       some_fancy_fn(batch)
 
 Credits
 -------
