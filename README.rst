@@ -67,7 +67,7 @@ Split records with max limit for batch len and max limit for record size:
 
 Split records with max batch len and size:
 
-... code-block:: python
+.. code-block:: python
 
     >>> records = [b"a", b"a", b"a", b"b", b"ccc", b"toolargeforbatch", b"dd", b"e"]
     >>> batcher = Batcher(
