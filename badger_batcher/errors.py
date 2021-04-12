@@ -1,0 +1,2 @@
+class RecordSizeExceeded(Exception):
+    pass

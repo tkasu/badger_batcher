@@ -1,6 +1,7 @@
 """Core functionality"""
+from .errors import RecordSizeExceeded
 from .utils import CacheIterator
-from typing import Any, Iterable, Optional, List
+from typing import Any, Callable, Iterable, Optional, List
 
 
 class Batcher:
@@ -46,16 +47,46 @@ class Batcher:
 
     records: Iterable[Any]
     max_batch_size: Optional[int]
+    max_record_size = Optional[int]
+    size_calc_fn = Optional[Callable[[Any], int]]
+    when_record_size_exceeded = Optional[str]
     _iter_state: Optional[CacheIterator]
 
-    def __init__(self, records, max_batch_size=None):
+    def __init__(
+        self,
+        records,
+        max_batch_size=None,
+        max_record_size=None,
+        size_calc_fn=None,
+        when_record_size_exceeded="raises",
+    ):
         self.records = records
         self.max_batch_size = max_batch_size
+
+        if max_record_size and not size_calc_fn:
+            raise ValueError("max_record_size requires size_calc_fn to be specified")
+        self.max_record_size = max_record_size
+        self.size_calc_fn = size_calc_fn
+
+        exceed_acceptable_values = ["raises", "skip"]
+        if when_record_size_exceeded not in exceed_acceptable_values:
+            raise ValueError(
+                f"when_record_size_exceeded should be in: {exceed_acceptable_values}"
+            )
+        self.when_record_size_exceeded = when_record_size_exceeded
+
         self._iter_state = None
 
     def _check_max_batch_size(self, batch) -> bool:
         if self.max_batch_size:
             return len(batch) >= self.max_batch_size
+        else:
+            return False
+
+    def _check_max_record_size(self, record) -> bool:
+        if self.max_record_size:
+            # mypy ignore: https://github.com/python/mypy/issues/708
+            return self.size_calc_fn(record) > self.max_record_size  # type: ignore
         else:
             return False
 
@@ -94,6 +125,20 @@ class Batcher:
 
         if self._iter_state:
             for record in self._iter_state:
+
+                if self._check_max_record_size(record):
+                    if self.when_record_size_exceeded == "raises":
+                        raise RecordSizeExceeded(
+                            f"The following record exceeded the size limit: {record}"
+                        )
+                    elif self.when_record_size_exceeded == "skip":
+                        continue
+                    else:
+                        raise NotImplementedError(
+                            f"Value `{self.when_record_size_exceeded}` not supported "
+                            f"for when_record_size_exceeded"
+                        )
+
                 if self._check_max_batch_size(batch):
                     return batch
                 else:
