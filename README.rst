@@ -116,6 +116,37 @@ Batcher will not eagerly realize the whole iterable, so use a generator for bigg
         [b"d\x00d\x00", b"e\x00"],
     ]
 
+Full example for e.g. Kinesis Streams like processing
+
+.. code-block:: python
+
+    import random
+    from badger_batcher import Batcher
+
+
+    def get_records():
+        records = (
+            f"""{{'id': '{i}', 'body': {('x' * random.randint(100_000, 7_000_000))}}}"""
+            for i in range(10_000)
+        )
+        return records
+
+
+    records = get_records()
+    encoded_records = (record.encode("utf-8") for record in records)
+
+    batcher = Batcher(
+        encoded_records,
+        max_batch_len=500,
+        max_record_size=1000 * 1000,
+        max_batch_size=5 * 1000 * 1000,
+        size_calc_fn=len,
+        when_record_size_exceeded="skip",
+    )
+
+    for i, batch in enumerate(batcher):
+        # do something
+
 
 Credits
 -------

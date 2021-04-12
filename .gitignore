@@ -104,3 +104,7 @@ ENV/
 # IDE settings
 .vscode/
 .idea/
+
+# Scratches
+
+badger_batcher/example.py
