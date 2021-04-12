@@ -94,3 +94,84 @@ def test_invalid_when_record_size_exceeded_fn():
             size_calc_fn=len,
             when_record_size_exceeded="party",
         )
+
+
+def test_only_max_batch_size_skip():
+    records = [b"aaaa", b"b", b"ccc", b"toolargeforbatch", b"dd", b"e"]
+    batcher = Batcher(
+        records, max_batch_size=5, size_calc_fn=len, when_record_size_exceeded="skip"
+    )
+    batched_records = batcher.batches()
+    assert batched_records == [[b"aaaa", b"b"], [b"ccc", b"dd"], [b"e"]]
+
+
+def test_max_batch_size_and_max_batch_len_skip():
+    records = [b"a", b"a", b"a", b"b", b"ccc", b"toolargeforbatch", b"dd", b"e"]
+    batcher = Batcher(
+        records,
+        max_batch_len=3,
+        max_batch_size=5,
+        size_calc_fn=len,
+        when_record_size_exceeded="skip",
+    )
+    batched_records = batcher.batches()
+    assert batched_records == [
+        [b"a", b"a", b"a"],
+        [b"b", b"ccc"],
+        [b"dd", b"e"],
+    ]
+
+
+def test_max_batch_size_and_max_batch_len_max_record_size_skip():
+    records = [b"a", b"a", b"a", b"b", b"ccc", b"bbbb", b"dd", b"e"]
+    batcher = Batcher(
+        records,
+        max_batch_len=3,
+        max_record_size=3,
+        max_batch_size=5,
+        size_calc_fn=len,
+        when_record_size_exceeded="skip",
+    )
+    batched_records = batcher.batches()
+    assert batched_records == [
+        [b"a", b"a", b"a"],
+        [b"b", b"ccc"],
+        [b"dd", b"e"],
+    ]
+
+
+def test_max_batch_size_missing_size_calc_fn():
+    records = [b"aaaa", b"bb", b"ccccc", b"d"]
+    with pytest.raises(ValueError):
+        _ = Batcher(records, max_batch_size=4)
+
+
+def test_max_batch_size_invalid_when_record_size_exceeded_fn():
+    records = [b"aaaa", b"bb", b"ccccc", b"d"]
+    with pytest.raises(ValueError):
+        _ = Batcher(
+            records,
+            max_batch_size=4,
+            size_calc_fn=len,
+            when_record_size_exceeded="party",
+        )
+
+
+def test_max_encode_before_batching():
+    records = ["a", "a", "a", "b", "ccc", "bbbb", "dd", "e"]
+    encoded_records_gen = (record.encode("utf-16-le") for record in records)
+
+    batcher = Batcher(
+        encoded_records_gen,
+        max_batch_len=3,
+        max_record_size=6,
+        max_batch_size=10,
+        size_calc_fn=len,
+        when_record_size_exceeded="skip",
+    )
+    batched_records = batcher.batches()
+    assert batched_records == [
+        [b"a\x00", b"a\x00", b"a\x00"],
+        [b"b\x00", b"c\x00c\x00c\x00"],
+        [b"d\x00d\x00", b"e\x00"],
+    ]

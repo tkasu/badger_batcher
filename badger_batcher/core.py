@@ -32,6 +32,17 @@ class Batcher:
     >>> batcher.batches()
     [[b'aaaa', b'bb'], [b'd']]
 
+    >>> records = [b"a", b"a", b"a", b"b", b"ccc", b"toolargeforbatch", b"dd", b"e"]
+    >>> batcher = Batcher(
+    ... records,
+    ... max_batch_len=3,
+    ... max_batch_size=5,
+    ... size_calc_fn=len,
+    ... when_record_size_exceeded="skip",
+    ... )
+    >>> batcher.batches()
+    [[b'a', b'a', b'a'], [b'b', b'ccc'], [b'dd', b'e']]
+
     Iterating the results one batch at a time:
 
     >>> records = (f"record: {rec}" for rec in range(21))
@@ -59,15 +70,18 @@ class Batcher:
     records: Iterable[Any]
     max_batch_len: Optional[int]
     max_record_size = Optional[int]
+    max_batch_size = Optional[int]
     size_calc_fn = Optional[Callable[[Any], int]]
     when_record_size_exceeded = Optional[str]
     _iter_state: Optional[CacheIterator]
+    _batch_cur_size: int
 
     def __init__(
         self,
         records,
         max_batch_len=None,
         max_record_size=None,
+        max_batch_size=None,
         size_calc_fn=None,
         when_record_size_exceeded="raises",
     ):
@@ -83,9 +97,12 @@ class Batcher:
         self.records = records
         self.max_batch_len = max_batch_len
 
-        if max_record_size and not size_calc_fn:
+        if (max_record_size or max_batch_size) and not size_calc_fn:
             raise ValueError("max_record_size requires size_calc_fn to be specified")
+        if max_batch_size and not max_record_size:
+            max_record_size = max_batch_size
         self.max_record_size = max_record_size
+        self.max_batch_size = max_batch_size
         self.size_calc_fn = size_calc_fn
 
         exceed_acceptable_values = ["raises", "skip"]
@@ -96,17 +113,55 @@ class Batcher:
         self.when_record_size_exceeded = when_record_size_exceeded
 
         self._iter_state = None
+        self._batch_cur_size = 0
 
     def _check_max_batch_len(self, batch) -> bool:
-        if self.max_batch_len:
-            return len(batch) >= self.max_batch_len
+        """
+        Returns True if record size exceeds the given threshold,
+        False otherwise.
+
+        :param batch: batch state before appending the new record
+        :return:
+        """
+        max_len = self.max_batch_len
+        if max_len:
+            return len(batch) >= max_len
         else:
             return False
 
     def _check_max_record_size(self, record) -> bool:
-        if self.max_record_size:
+        """
+        Returns True if record size exceeds the given threshold,
+        False otherwise.
+
+        :param record: any record
+        :return:
+        """
+        max_size = self.max_record_size
+        if max_size:
             # mypy ignore: https://github.com/python/mypy/issues/708
-            return self.size_calc_fn(record) > self.max_record_size  # type: ignore
+            return self.size_calc_fn(record) > max_size  # type: ignore
+        else:
+            return False
+
+    def _check_new_batch_size(self, record: Any) -> bool:
+        """
+        Returns True if batch size exceeds the given threshold,
+        False otherwise.
+
+        Also fetches and updates batch size in self._batch_cur_size.
+
+        :param record: any record
+        :return:
+        """
+        max_size = self.max_batch_size
+        if max_size:
+            new_batch_size = self._batch_cur_size + self.size_calc_fn(record)
+            if new_batch_size > max_size:
+                return True
+            else:
+                self._batch_cur_size = new_batch_size
+                return False
         else:
             return False
 
@@ -143,9 +198,13 @@ class Batcher:
         if not self._iter_state:
             raise StopIteration
 
-        batch = []
+        # Handle cached record from the previous batch
         if cache := self._iter_state.prev:
-            batch.append(cache)
+            batch = [cache]
+        else:
+            batch = []
+        if self.max_batch_size:
+            self._batch_cur_size = self.size_calc_fn(cache) if cache else 0
 
         if self._iter_state:
             for record in self._iter_state:
@@ -165,10 +224,13 @@ class Batcher:
 
                 if self._check_max_batch_len(batch):
                     return batch
+                elif self._check_new_batch_size(record):
+                    return batch
                 else:
                     batch.append(record)
 
         self._iter_state = None
+        self._batch_cur_size = 0
         return batch
 
     def batches(self) -> List[List[Any]]:

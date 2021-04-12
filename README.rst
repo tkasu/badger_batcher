@@ -65,6 +65,21 @@ Split records with max limit for batch len and max limit for record size:
     >>> batcher.batches()
     [[b'aaaa', b'bb'], [b'd']]
 
+Split records with max batch len and size:
+
+... code-block:: python
+
+    >>> records = [b"a", b"a", b"a", b"b", b"ccc", b"toolargeforbatch", b"dd", b"e"]
+    >>> batcher = Batcher(
+    ... records,
+    ... max_batch_len=3,
+    ... max_batch_size=5,
+    ... size_calc_fn=len,
+    ... when_record_size_exceeded="skip",
+    ... )
+    >>> batcher.batches()
+    [[b'a', b'a', b'a'], [b'b', b'ccc'], [b'dd', b'e']]
+
 When processing big chunks of data, consider iterating instead:
 
 .. code-block:: python
@@ -76,6 +91,31 @@ When processing big chunks of data, consider iterating instead:
     >>> for batch in batcher:
     ...       # do something for each batch
     ...       some_fancy_fn(batch)
+
+If you need to encode records before applying the batcher, just encode it before applying.
+Batcher will not eagerly realize the whole iterable, so use a generator for bigger iterables.
+
+.. code-block:: python
+
+    >>> records = ["a", "a", "a", "b", "ccc", "bbbb", "dd", "e"]
+    >>> encoded_records_gen = (record.encode("utf-16-le") for record in records)
+
+    >>> batcher = Batcher(
+    ... encoded_records_gen,
+    ... max_batch_len=3,
+    ... max_record_size=6,
+    ... max_batch_size=10,
+    ... size_calc_fn=len,
+    ... when_record_size_exceeded="skip",
+    ... )
+
+    >>> batched_records = batcher.batches()
+    [
+        [b"a\x00", b"a\x00", b"a\x00"],
+        [b"b\x00", b"c\x00c\x00c\x00"],
+        [b"d\x00d\x00", b"e\x00"],
+    ]
+
 
 Credits
 -------
